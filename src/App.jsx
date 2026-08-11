@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Shield, TrendingUp, TrendingDown, BookOpen, BarChart3, Coins, Percent, HelpCircle, Flame } from 'lucide-react';
+import { Shield, BookOpen, BarChart3, Coins, Percent, HelpCircle, Flame } from 'lucide-react';
 
 export default function App() {
   const containerRef = useRef(null);
@@ -23,7 +23,7 @@ export default function App() {
     fomoPrice: 0
   });
 
-  // LIST SAHAM SUPER BANYAK (AMERIKA & INDONESIA)
+  // LIST SAHAM AMERIKA & INDONESIA
   const assetList = [
     // --- US STOCKS (Wall Street) ---
     { name: '🟢 Nvidia (NVDA) - US', value: 'NASDAQ:NVDA', eps: 4.22, bvps: 18.50, growth: 25, div: 0.06, currency: '$' },
@@ -51,7 +51,7 @@ export default function App() {
     { ticker: 'BBRI', name: 'Bank Rakyat Indonesia', sentiment: 'Recovery', catalyst: 'Efisiensi Kredit Mikro & Pemulihan Margin NPL Kuartal Ini.', effect: '🛒 Akumulasi Diskon' }
   ];
 
-  // Sinkronisasi data fundamental otomatis saat dropdown aset berubah
+  // Sinkronisasi otomatis data fundamental saat dropdown aset berubah
   useEffect(() => {
     const selected = assetList.find(a => a.value === selectedAsset);
     if (selected) {
@@ -81,7 +81,7 @@ export default function App() {
     });
   }, [tickerData]);
 
-  // Clock Timer Sesi Market
+  // Clock Sesi Market
   useEffect(() => {
     const timer = setInterval(() => {
       setTimeText(new Date().toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta' }));
@@ -89,49 +89,35 @@ export default function App() {
     return () => clearInterval(timer);
   }, []);
 
-  // FIX UTAMA: Pemuatan Grafik TradingView yang Kokoh & Anti-Gagal
+  // PERBAIKAN TOTAL: Suntik Iframe Murni Jalur Cepat (Anti-Limit & Anti-Stuck)
   useEffect(() => {
     if (!containerRef.current) return;
 
-    // Bersihkan kontainer sebelum merender ulang untuk mencegah duplikasi atau stuck iframe
+    // Bersihkan kontainer total
     containerRef.current.innerHTML = '';
 
-    const initWidget = () => {
-      if (typeof window.TradingView !== 'undefined' && containerRef.current) {
-        new window.TradingView.widget({
-          width: '100%',
-          height: 420,
-          symbol: selectedAsset,
-          interval: intervalTime,
-          timezone: 'Asia/Jakarta',
-          theme: 'dark',
-          style: '1',
-          locale: 'id',
-          container_id: containerRef.current.id,
-          studies: ['MASimple@tv-basicstudies', 'RSI@tv-basicstudies'],
-          backgroundColor: '#060b08',
-          gridColor: '#111827',
-        });
-      }
-    };
+    // Modifikasi kode interval ke format angka yang dipahami URL widgetembed TradingView
+    let tvInterval = 'D';
+    if (intervalTime === '15m') tvInterval = '15';
+    if (intervalTime === '1h') tvInterval = '60';
+    if (intervalTime === '1w') tvInterval = 'W';
 
-    // Deteksi jika script eksternal global sudah ada di Window DOM
-    if (window.TradingView) {
-      initWidget();
-    } else {
-      const script = document.createElement('script');
-      script.src = 'https://s3.tradingview.com/tv.js';
-      script.type = 'text/javascript';
-      script.async = true;
-      script.onload = initWidget;
-      document.head.appendChild(script);
-    }
+    // Buat element iframe direct link ke mirror server TradingView
+    const iframe = document.createElement('iframe');
+    iframe.src = `https://s.tradingview.com/widgetembed/?frameElementId=tradingview_secure&symbol=${selectedAsset}&interval=${tvInterval}&theme=dark&style=1&timezone=Asia%2FJakarta&studies=%5B%5D&locale=id&whitelabel=1`;
+    iframe.style.width = '100%';
+    iframe.style.height = '100%';
+    iframe.style.border = 'none';
+    iframe.setAttribute('allowfullscreen', 'true');
+    iframe.setAttribute('scrolling', 'no');
+
+    containerRef.current.appendChild(iframe);
   }, [selectedAsset, intervalTime]);
 
   return (
     <div className="min-h-screen bg-[#020604] text-gray-100 font-sans p-4 md:p-6 space-y-6">
       
-      {/* HEADER UTAMA */}
+      {/* HEADER WEBSITE */}
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center border-b border-emerald-900/40 pb-5 gap-4">
         <div>
           <h1 className="text-2xl font-black tracking-wider text-emerald-400 flex items-center gap-2">
@@ -152,13 +138,14 @@ export default function App() {
         </div>
       </div>
 
-      {/* RENDER TERMINAL UTAMA & EDITOR METRICS */}
+      {/* WORKSTATION FRAME & PANEL EDITOR */}
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-[#060b08]/80 backdrop-blur-md p-4 rounded-xl border border-gray-800">
-          <div id="tradingview_secure_widget" ref={containerRef} className="w-full rounded-lg overflow-hidden bg-[#060b08]" style={{ height: '420px' }} />
+          {/* Box penampung iframe dengan tinggi absolut yang pas */}
+          <div id="tradingview_secure_frame" ref={containerRef} className="w-full rounded-lg overflow-hidden bg-[#060b08]" style={{ height: '420px' }} />
         </div>
         
-        {/* FINANCIAL METRICS EDITOR PANEL */}
+        {/* PANEL METRICS UTAMA */}
         <div className="bg-[#060b08]/80 backdrop-blur-md p-5 rounded-xl border border-gray-800 flex flex-col justify-between space-y-4">
           <div>
             <h3 className="text-xs font-bold tracking-widest text-emerald-500 uppercase border-b border-gray-800 pb-2">📊 Live Financial Metrics Editor</h3>
@@ -185,53 +172,53 @@ export default function App() {
         </div>
       </div>
 
-      {/* SPEKTRUM VALUASI TIGA LEVEL HARGA */}
+      {/* VALUATION SPECTRUM MATRIX */}
       <div className="max-w-7xl mx-auto bg-[#060b08]/80 backdrop-blur-md p-5 rounded-xl border border-gray-800">
         <div className="flex items-center gap-2 border-b border-gray-800 pb-3 mb-4">
           <BarChart3 className="w-5 h-5 text-emerald-400" />
           <div>
             <h3 className="text-sm font-bold text-gray-200">Corporate Multi-Level Valuation Output</h3>
-            <p className="text-[11px] text-gray-500">Hasil perhitungan otomatis batasan area psikologis investasi berdasarkan fondasi emiten.</p>
+            <p className="text-[11px] text-gray-500">Perhitungan batas area psikologis pasar untuk acuan transaksi beli dan jual, Bos.</p>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* 1. HARGA PAS BUAT BELI */}
+          {/* HARGA PAS BUAT BELI */}
           <div className="bg-emerald-950/20 border border-emerald-900/50 p-4 rounded-lg text-center">
             <span className="text-emerald-400 text-[10px] font-bold tracking-wider block mb-1">🛒 HARGA PAS BUAT BELI (MOS ZONE)</span>
             <div className="text-xl font-black text-emerald-400 font-mono">
               {tickerData.currency}{valuation.buyPrice}
             </div>
-            <p className="text-[10px] text-gray-400 mt-1">Sangat aman untuk akumulasi karena memiliki diskon pengaman.</p>
+            <p className="text-[10px] text-gray-400 mt-1">Sangat aman untuk entri karena memiliki bantalan diskon harga murah.</p>
           </div>
 
-          {/* 2. HARGA WAJAR UTAMA */}
+          {/* HARGA WAJAR UTAMA */}
           <div className="bg-blue-950/20 border border-blue-900/50 p-4 rounded-lg text-center">
             <span className="text-blue-400 text-[10px] font-bold tracking-wider block mb-1">⚖️ HARGA WAJAR INTRINSIK</span>
             <div className="text-xl font-black text-blue-400 font-mono">
               {tickerData.currency}{valuation.fairValue}
             </div>
-            <p className="text-[10px] text-gray-400 mt-1">Nilai fundamental sejati perusahaan berdasarkan hitungan aset dan pertumbuhan.</p>
+            <p className="text-[10px] text-gray-400 mt-1">Nilai fundamental wajar emiten dihitung dari aset nyata dan performa laba.</p>
           </div>
 
-          {/* 3. HARGA FOMO */}
+          {/* HARGA FOMO */}
           <div className="bg-red-950/20 border border-red-900/50 p-4 rounded-lg text-center">
             <span className="text-red-400 text-[10px] font-bold tracking-wider block mb-1">🚨 HARGA FOMO (OVERVALUED AREA)</span>
             <div className="text-xl font-black text-red-400 font-mono">
               {tickerData.currency}{valuation.fomoPrice}
             </div>
-            <p className="text-[10px] text-gray-400 mt-1">Zona bahaya! Sering terjadi aksi ambil untung besar oleh institusi di area ini.</p>
+            <p className="text-[10px] text-gray-400 mt-1">Batas euforia retail! Rawan pembalikan arah karena harga sudah kemahalan.</p>
           </div>
         </div>
       </div>
 
-      {/* TABEL MONITOR SAHAM TRENDING GLOBAL & REGIONAL */}
+      {/* TABEL SAHAM TRENDING GLOBAL & REGIONAL */}
       <div className="max-w-7xl mx-auto bg-[#060b08]/80 backdrop-blur-md p-5 rounded-xl border border-gray-800">
         <div className="flex items-center gap-2 mb-4">
           <Flame className="w-5 h-5 text-amber-500 animate-bounce" />
           <div>
             <h3 className="text-sm font-bold text-gray-200">Trending & High Catalyst Market Monitor</h3>
-            <p className="text-[11px] text-gray-500">Daftar instrumen aktif yang mendominasi volume dan pergerakan bursa global.</p>
+            <p className="text-[11px] text-gray-500">Daftar instrumen aktif dengan volume perdagangan besar dan sentimen berita utama dunia.</p>
           </div>
         </div>
 
@@ -267,12 +254,12 @@ export default function App() {
         </div>
       </div>
 
-      {/* STRATEGY TIPS FOOTER */}
+      {/* NOTIFIKASI PANDUAN EKSEKUSI */}
       <div className="max-w-7xl mx-auto bg-emerald-950/10 border border-emerald-900/30 p-3 rounded-lg flex items-start gap-2 text-xs text-emerald-400">
         <HelpCircle className="w-4 h-4 shrink-0 mt-0.5" />
         <div>
-          <span className="font-bold block">💡 Langkah Taktis Jika Chart Belum Muncul:</span>
-          Jika setelah memakai kode baru ini chart masih tertutup layar abu-abu, pastikan Bos menonaktifkan aplikasi **Ad-Blocker / Brave Shield** khusus untuk domain ini, karena sistem keamanan ad-blocker terkadang salah mengenali script TradingView sebagai tracker iklan.
+          <span className="font-bold block">💡 Langkah Taktis Jika Mengalami Kendala Koneksi:</span>
+          Iframe murni ini memotong alur unduhan script pihak ketiga agar anti-limit. Namun, pastikan Bos tetap mematikan **Ad-Blocker** atau **Brave Shield** untuk domain web Bos ini, karena websocket data harga *real-time* bursa terkadang diblokir otomatis oleh ekstensi pengaman browser.
         </div>
       </div>
 
