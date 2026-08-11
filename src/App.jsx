@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Shield, TrendingUp, TrendingDown, BookOpen, AlertCircle, BarChart3, Coins, Percent, HelpCircle, Flame, DollarSign } from 'lucide-react';
+import { Shield, TrendingUp, TrendingDown, BookOpen, BarChart3, Coins, Percent, HelpCircle, Flame } from 'lucide-react';
 
 export default function App() {
   const containerRef = useRef(null);
@@ -9,7 +9,7 @@ export default function App() {
 
   // STATE PARAMETER FUNDAMENTAL SAHAM GABUNGAN (US & IDX)
   const [tickerData, setTickerData] = useState({
-    eps: 4.20,
+    eps: 4.22,
     bvps: 18.50,
     expectedGrowth: 25,
     dividend: 0.06,
@@ -42,7 +42,7 @@ export default function App() {
     { name: '⛏️ Adaro Energy (ADRO) - ID', value: 'IDX:ADRO', eps: 520, bvps: 3100, growth: 4, div: 350, currency: 'Rp ' }
   ];
 
-  // DATA SAHAM TRENDING & BERITA BESAR (2026 MARKET)
+  // DATA SAHAM TRENDING & BERITA BESAR
   const trendingStocks = [
     { ticker: 'NVDA', name: 'Nvidia Corp', sentiment: 'Super Bullish', catalyst: 'Permintaan Chip AI Next-Gen Melambung Tinggi & Rekor Earnings.', effect: '🔥 Rekomendasi Accumulate' },
     { ticker: 'TSLA', name: 'Tesla Inc', sentiment: 'Volatile', catalyst: 'Peluncuran Sistem Autopilot FSD Full Cloud & Ekspansi Pabrik.', effect: '⚠️ Wait and See' },
@@ -51,7 +51,7 @@ export default function App() {
     { ticker: 'BBRI', name: 'Bank Rakyat Indonesia', sentiment: 'Recovery', catalyst: 'Efisiensi Kredit Mikro & Pemulihan Margin NPL Kuartal Ini.', effect: '🛒 Akumulasi Diskon' }
   ];
 
-  // Sinkronisasi otomatis saat dropdown aset dipilih
+  // Sinkronisasi data fundamental otomatis saat dropdown aset berubah
   useEffect(() => {
     const selected = assetList.find(a => a.value === selectedAsset);
     if (selected) {
@@ -67,16 +67,12 @@ export default function App() {
 
   // ENGINE VALUASI 3 LEVEL UTAMA (HARGA WAJAR, PAS BELI, FOMO)
   useEffect(() => {
-    // 1. Hitung Harga Wajar Intrinsik dasar (Kombinasi Graham & Multiplier Pertumbuhan)
     const baseValue = Math.sqrt(22.5 * tickerData.eps * tickerData.bvps);
     const growthPremium = baseValue * (1 + (tickerData.expectedGrowth / 100) * 0.5);
     const fairValue = (baseValue + growthPremium) / 2;
 
-    // 2. Harga Pas Buat Beli (Margin of Safety - Diskon 15% dari Harga Wajar)
-    const buyPrice = fairValue * 0.85;
-
-    // 3. Harga FOMO (Zonasi Overvalued - 25% di atas Harga Wajar akibat hype retail)
-    const fomoPrice = fairValue * 1.25;
+    const buyPrice = fairValue * 0.85; // Margin of Safety 15%
+    const fomoPrice = fairValue * 1.25; // Overvalued Zone 25%
 
     setValuation({
       fairValue: tickerData.currency === '$' ? parseFloat(fairValue.toFixed(2)) : Math.round(fairValue),
@@ -85,6 +81,7 @@ export default function App() {
     });
   }, [tickerData]);
 
+  // Clock Timer Sesi Market
   useEffect(() => {
     const timer = setInterval(() => {
       setTimeText(new Date().toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta' }));
@@ -92,23 +89,41 @@ export default function App() {
     return () => clearInterval(timer);
   }, []);
 
-  // Render TradingView Terminal
+  // FIX UTAMA: Pemuatan Grafik TradingView yang Kokoh & Anti-Gagal
   useEffect(() => {
-    if (containerRef.current) {
-      containerRef.current.innerHTML = '';
+    if (!containerRef.current) return;
+
+    // Bersihkan kontainer sebelum merender ulang untuk mencegah duplikasi atau stuck iframe
+    containerRef.current.innerHTML = '';
+
+    const initWidget = () => {
+      if (typeof window.TradingView !== 'undefined' && containerRef.current) {
+        new window.TradingView.widget({
+          width: '100%',
+          height: 420,
+          symbol: selectedAsset,
+          interval: intervalTime,
+          timezone: 'Asia/Jakarta',
+          theme: 'dark',
+          style: '1',
+          locale: 'id',
+          container_id: containerRef.current.id,
+          studies: ['MASimple@tv-basicstudies', 'RSI@tv-basicstudies'],
+          backgroundColor: '#060b08',
+          gridColor: '#111827',
+        });
+      }
+    };
+
+    // Deteksi jika script eksternal global sudah ada di Window DOM
+    if (window.TradingView) {
+      initWidget();
+    } else {
       const script = document.createElement('script');
       script.src = 'https://s3.tradingview.com/tv.js';
       script.type = 'text/javascript';
       script.async = true;
-      script.onload = () => {
-        if (typeof window.TradingView !== 'undefined') {
-          new window.TradingView.widget({
-            width: '100%', height: 420, symbol: selectedAsset, interval: intervalTime,
-            timezone: 'Asia/Jakarta', theme: 'dark', style: '1', locale: 'id', container_id: containerRef.current.id,
-            studies: ['MASimple@tv-basicstudies', 'RSI@tv-basicstudies'], backgroundColor: '#060b08', gridColor: '#111827',
-          });
-        }
-      };
+      script.onload = initWidget;
       document.head.appendChild(script);
     }
   }, [selectedAsset, intervalTime]);
@@ -116,7 +131,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#020604] text-gray-100 font-sans p-4 md:p-6 space-y-6">
       
-      {/* HEADER WEBSITE */}
+      {/* HEADER UTAMA */}
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center border-b border-emerald-900/40 pb-5 gap-4">
         <div>
           <h1 className="text-2xl font-black tracking-wider text-emerald-400 flex items-center gap-2">
@@ -137,28 +152,28 @@ export default function App() {
         </div>
       </div>
 
-      {/* RENDER TERMINAL UTAMA & INPUT DATA METRICS */}
+      {/* RENDER TERMINAL UTAMA & EDITOR METRICS */}
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-[#060b08]/80 backdrop-blur-md p-4 rounded-xl border border-gray-800">
-          <div id="tradingview_pro" ref={containerRef} className="w-full rounded-lg overflow-hidden bg-[#060b08]" style={{ height: '420px' }} />
+          <div id="tradingview_secure_widget" ref={containerRef} className="w-full rounded-lg overflow-hidden bg-[#060b08]" style={{ height: '420px' }} />
         </div>
         
-        {/* INPUT PENGENDALI FUNDAMENTAL DINAMIS */}
+        {/* FINANCIAL METRICS EDITOR PANEL */}
         <div className="bg-[#060b08]/80 backdrop-blur-md p-5 rounded-xl border border-gray-800 flex flex-col justify-between space-y-4">
           <div>
             <h3 className="text-xs font-bold tracking-widest text-emerald-500 uppercase border-b border-gray-800 pb-2">📊 Live Financial Metrics Editor</h3>
             <div className="mt-4 space-y-3 text-xs">
               <div>
                 <label className="text-gray-400 block mb-1 flex items-center gap-1"><Coins className="w-3.5 h-3.5"/> EPS (Earnings Per Share):</label>
-                <input type="number" step="0.01" value={tickerData.eps} onChange={(e) => setTickerData({...tickerData, eps: Number(e.target.value)})} className="w-full bg-[#020604] border border-gray-800 rounded px-2 py-1.5 text-emerald-400 font-mono" />
+                <input type="number" step="0.01" value={tickerData.eps} onChange={(e) => setTickerData({...tickerData, eps: Number(e.target.value)})} className="w-full bg-[#020604] border border-gray-800 rounded px-2 py-1.5 text-emerald-400 font-mono focus:outline-none focus:border-emerald-500" />
               </div>
               <div>
                 <label className="text-gray-400 block mb-1 flex items-center gap-1"><BookOpen className="w-3.5 h-3.5"/> BVPS (Book Value Per Share):</label>
-                <input type="number" step="0.01" value={tickerData.bvps} onChange={(e) => setTickerData({...tickerData, bvps: Number(e.target.value)})} className="w-full bg-[#020604] border border-gray-800 rounded px-2 py-1.5 text-emerald-400 font-mono" />
+                <input type="number" step="0.01" value={tickerData.bvps} onChange={(e) => setTickerData({...tickerData, bvps: Number(e.target.value)})} className="w-full bg-[#020604] border border-gray-800 rounded px-2 py-1.5 text-emerald-400 font-mono focus:outline-none focus:border-emerald-500" />
               </div>
               <div>
                 <label className="text-gray-400 block mb-1 flex items-center gap-1"><Percent className="w-3.5 h-3.5"/> Projected Growth Rate (%):</label>
-                <input type="number" value={tickerData.expectedGrowth} onChange={(e) => setTickerData({...tickerData, expectedGrowth: Number(e.target.value)})} className="w-full bg-[#020604] border border-gray-800 rounded px-2 py-1.5 text-emerald-400 font-mono" />
+                <input type="number" value={tickerData.expectedGrowth} onChange={(e) => setTickerData({...tickerData, expectedGrowth: Number(e.target.value)})} className="w-full bg-[#020604] border border-gray-800 rounded px-2 py-1.5 text-emerald-400 font-mono focus:outline-none focus:border-emerald-500" />
               </div>
             </div>
           </div>
@@ -170,13 +185,13 @@ export default function App() {
         </div>
       </div>
 
-      {/* MATRIX PERHITUNGAN TIGA LEVEL HARGA UTAMA */}
+      {/* SPEKTRUM VALUASI TIGA LEVEL HARGA */}
       <div className="max-w-7xl mx-auto bg-[#060b08]/80 backdrop-blur-md p-5 rounded-xl border border-gray-800">
         <div className="flex items-center gap-2 border-b border-gray-800 pb-3 mb-4">
           <BarChart3 className="w-5 h-5 text-emerald-400" />
           <div>
             <h3 className="text-sm font-bold text-gray-200">Corporate Multi-Level Valuation Output</h3>
-            <p className="text-[11px] text-gray-500">Hasil kalkulasi otomatis batas zona investasi aman dan zona psikologis rawan manipulasi harga pasar.</p>
+            <p className="text-[11px] text-gray-500">Hasil perhitungan otomatis batasan area psikologis investasi berdasarkan fondasi emiten.</p>
           </div>
         </div>
 
@@ -187,16 +202,16 @@ export default function App() {
             <div className="text-xl font-black text-emerald-400 font-mono">
               {tickerData.currency}{valuation.buyPrice}
             </div>
-            <p className="text-[10px] text-gray-400 mt-1">Sangat aman untuk entri jangka panjang karena memiliki diskon pengaman.</p>
+            <p className="text-[10px] text-gray-400 mt-1">Sangat aman untuk akumulasi karena memiliki diskon pengaman.</p>
           </div>
 
-          {/* 2. HARGA WAJAR TAMA */}
+          {/* 2. HARGA WAJAR UTAMA */}
           <div className="bg-blue-950/20 border border-blue-900/50 p-4 rounded-lg text-center">
             <span className="text-blue-400 text-[10px] font-bold tracking-wider block mb-1">⚖️ HARGA WAJAR INTRINSIK</span>
             <div className="text-xl font-black text-blue-400 font-mono">
               {tickerData.currency}{valuation.fairValue}
             </div>
-            <p className="text-[10px] text-gray-400 mt-1">Nilai murni perusahaan berdasarkan aset riil dan target ekspansi emiten.</p>
+            <p className="text-[10px] text-gray-400 mt-1">Nilai fundamental sejati perusahaan berdasarkan hitungan aset dan pertumbuhan.</p>
           </div>
 
           {/* 3. HARGA FOMO */}
@@ -205,18 +220,18 @@ export default function App() {
             <div className="text-xl font-black text-red-400 font-mono">
               {tickerData.currency}{valuation.fomoPrice}
             </div>
-            <p className="text-[10px] text-gray-400 mt-1">Batas rawan! Kalau harga pasar di atas level ini, jangan nekat kejar atas, Bos.</p>
+            <p className="text-[10px] text-gray-400 mt-1">Zona bahaya! Sering terjadi aksi ambil untung besar oleh institusi di area ini.</p>
           </div>
         </div>
       </div>
 
-      {/* TABEL SAHAM YANG SEDANG NAIK DAUN / HOT NEWS MARKET (2026) */}
+      {/* TABEL MONITOR SAHAM TRENDING GLOBAL & REGIONAL */}
       <div className="max-w-7xl mx-auto bg-[#060b08]/80 backdrop-blur-md p-5 rounded-xl border border-gray-800">
         <div className="flex items-center gap-2 mb-4">
           <Flame className="w-5 h-5 text-amber-500 animate-bounce" />
           <div>
             <h3 className="text-sm font-bold text-gray-200">Trending & High Catalyst Market Monitor</h3>
-            <p className="text-[11px] text-gray-500">Daftar instrumen global yang sedang mendominasi perbincangan bursa dunia saat ini.</p>
+            <p className="text-[11px] text-gray-500">Daftar instrumen aktif yang mendominasi volume dan pergerakan bursa global.</p>
           </div>
         </div>
 
@@ -227,7 +242,7 @@ export default function App() {
                 <th className="p-3">Kode</th>
                 <th className="p-3">Nama Emiten</th>
                 <th className="p-3">Sentimen Pasar</th>
-                <th className="p-3">Berita Besar / Katalis Pasar</th>
+                <th className="p-3">Berita Besar / Katalis Utama</th>
                 <th className="p-3 text-right">Rekomendasi Aksi</th>
               </tr>
             </thead>
@@ -252,12 +267,12 @@ export default function App() {
         </div>
       </div>
 
-      {/* STRATEGY NOTIFICATION GUIDE */}
+      {/* STRATEGY TIPS FOOTER */}
       <div className="max-w-7xl mx-auto bg-emerald-950/10 border border-emerald-900/30 p-3 rounded-lg flex items-start gap-2 text-xs text-emerald-400">
         <HelpCircle className="w-4 h-4 shrink-0 mt-0.5" />
         <div>
-          <span className="font-bold block">💡 Rules Pemakaian Workstation Saham Global Ala Tama:</span>
-          Kombinasikan dengan strategi andalan Bos: cari titik pantulan di grafik saat harga menyentuh zona **Harga Pas Buat Beli**, dan pasang target *Take Profit* bertahap sebelum harga menyentuh area **Harga FOMO**. Aman, presisi, dan menjaga psikologi MM agar tetap konsisten. Sukses selalu eksekusinya, Bos!
+          <span className="font-bold block">💡 Langkah Taktis Jika Chart Belum Muncul:</span>
+          Jika setelah memakai kode baru ini chart masih tertutup layar abu-abu, pastikan Bos menonaktifkan aplikasi **Ad-Blocker / Brave Shield** khusus untuk domain ini, karena sistem keamanan ad-blocker terkadang salah mengenali script TradingView sebagai tracker iklan.
         </div>
       </div>
 
