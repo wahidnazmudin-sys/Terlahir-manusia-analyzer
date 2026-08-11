@@ -1,0 +1,1 @@
+# Terlahir-manusia-analyzer
