@@ -11,7 +11,7 @@ import {
   LayoutDashboard
 } from 'lucide-react';
 
-const BASE_URL = 'http://localhost:8000';
+const BASE_URL = 'http://202.155.143.187:8000';
 const DEFAULT_SYMBOL = 'GC=F';
 
 export default function App() {
